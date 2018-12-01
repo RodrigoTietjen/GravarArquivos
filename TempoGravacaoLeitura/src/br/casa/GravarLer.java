@@ -11,9 +11,10 @@ import java.util.concurrent.CyclicBarrier;
 public class GravarLer {
 	
 	CyclicBarrier gate;
-	
-	private char[] char1gb = new char[100000000];
+//								      419430400 / 800 = 524288
+	private char[] char400mb = new char[419430400];
 	private char[] char4k = new char[4000];
+	private char [] char500k = new char[512000];
 	
 	static long antes = 0;
 	static long depois = 0;
@@ -22,9 +23,10 @@ public class GravarLer {
 		GravarLer g = new GravarLer();
 		g.testa1();
 		g.testa64();
+		g.gravaVariosSequencial();
 	}
 	
-	public void calculaTotalRecebido(char[] any){
+	public void calculaTotalRecebido(char[] any, String nomeArquivo){
 		  new Thread() {
 		     
 		    @Override
@@ -32,7 +34,7 @@ public class GravarLer {
 			    FileWriter fileWriter;
 				try {
 					gate.await();
-					fileWriter = new FileWriter("testando");
+					fileWriter = new FileWriter(nomeArquivo);
 					PrintWriter printWriter = new PrintWriter(fileWriter);
 				    printWriter.write(any);  
 				    printWriter.close();
@@ -46,26 +48,41 @@ public class GravarLer {
 		}
 	
 	public synchronized void testa1() throws InterruptedException, BrokenBarrierException, IOException {
-		System.out.println("Gravando um arquivo 4k");
+		System.out.println("Gravando um arquivo de 400MB");
 		gate = new CyclicBarrier(2);
-		calculaTotalRecebido(char4k);
+		calculaTotalRecebido(char400mb, "testando");
 		antes = System.currentTimeMillis();
 		gate.await();
-		wait(1000L);
-		System.out.println("Tempo de gravaÁ„o em Millisegundos: " + (depois - antes) + "\n");
+		wait(10000L);
+		System.out.println("Tempo de grava√ß√£o em Millisegundos: " + (depois - antes) + "\n");
 		lerArquivo();
 	}
 	
 	public synchronized void testa64() throws InterruptedException, BrokenBarrierException {
-		System.out.println("Gravando 64 arquivos 4k simult‚neos");
+		System.out.println("Gravando 64 arquivos 4k simult√¢neos");
 		gate = new CyclicBarrier(65);
 		for (int i = 0; i < 64; i++) {
-			calculaTotalRecebido(char4k);
+			calculaTotalRecebido(char4k, "arquivo_" + i);
 		}
 		antes = System.currentTimeMillis();
 		gate.await();
-		wait(1000L);
-		System.out.println("Tempo de gravaÁ„o em Millisegundos: " + (depois - antes) + "\n");
+		wait(10000L);
+		System.out.println("Tempo de grava√ß√£o em Millisegundos: " + (depois - antes) + "\n");
+	}
+	
+	public synchronized void gravaVariosSequencial() throws InterruptedException,
+	BrokenBarrierException, IOException {
+		System.out.println("Gravando 800 arquivos de 500k sequencialmente");
+		FileWriter fileWriter;
+		antes = System.currentTimeMillis();
+		for (int i = 0; i < 800; i++) {
+			fileWriter = new FileWriter("arquivo" + i);
+			PrintWriter printWriter = new PrintWriter(fileWriter);
+		    printWriter.write(char500k);  
+		    printWriter.close();
+		}
+		depois = System.currentTimeMillis();
+		System.out.println("Tempo de grava√ß√£o em Millisegundos: " + (depois - antes) + "\n");
 	}
 	
 	public void lerArquivo() throws IOException {
